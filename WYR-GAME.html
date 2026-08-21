@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WOULD YOU RATHER?! — AI Dilemma Duel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg: #150f1e;
+  --bg2: #1d1528;
+  --cream: #f4ede4;
+  --yellow: #f5d033;
+  --pink: #ff3e80;
+  --violet: #7b5ea7;
+  --violet-dim: #4a3966;
+  --green: #38f0a0;
+}
+*{ box-sizing: border-box; margin:0; padding:0; }
+body{
+  min-height:100vh;
+  background:
+    radial-gradient(circle at 15% 10%, rgba(123,94,167,0.35), transparent 45%),
+    radial-gradient(circle at 85% 90%, rgba(255,62,128,0.20), transparent 50%),
+    var(--bg);
+  color: var(--cream);
+  font-family: 'Space Grotesk', sans-serif;
+  display:flex;
+  flex-direction:column;
+  overflow-x:hidden;
+}
+.noise{
+  position:fixed; inset:0; pointer-events:none; opacity:0.035; z-index:0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+.topbar{
+  display:flex; justify-content:space-between; align-items:center;
+  padding: 18px 22px;
+  z-index:1;
+}
+.logo{
+  font-family:'Anton', sans-serif;
+  font-size: clamp(18px, 4vw, 26px);
+  letter-spacing: 1px;
+  color: var(--cream);
+}
+.logo-you{ color: var(--pink); margin: 0 4px; }
+.bolt{ color: var(--yellow); margin-left:4px; }
+.streak{
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: var(--violet-dim);
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--violet-dim);
+  padding: 6px 12px;
+  border-radius: 999px;
+}
+.streak span{ color: var(--green); font-weight:700; }
+.arena{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap: 26px;
+  padding: 20px 18px 60px;
+  z-index:1;
+  max-width: 920px;
+  margin: 0 auto;
+  width:100%;
+}
+.category-picker{
+  display:flex; flex-wrap:wrap; justify-content:center; gap:8px;
+}
+.chip{
+  font-family:'Space Grotesk', sans-serif;
+  font-size:13px;
+  font-weight:600;
+  color: var(--cream);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.12);
+  padding: 8px 14px;
+  border-radius: 999px;
+  cursor:pointer;
+  transition: transform .12s ease, background .15s ease, border-color .15s ease;
+}
+.chip:hover{ transform: translateY(-1px); }
+.chip.active{ background: var(--violet); border-color: var(--violet); color: white; }
+.duel{
+  width:100%;
+  display:grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items:center;
+  gap: 14px;
+}
+.option{
+  position:relative;
+  text-align:left;
+  font-family:'Space Grotesk', sans-serif;
+  font-size: clamp(15px, 2.4vw, 19px);
+  font-weight:600;
+  line-height:1.35;
+  color: var(--bg);
+  border: none;
+  border-radius: 18px;
+  padding: 26px 22px 20px;
+  min-height: 150px;
+  cursor:pointer;
+  overflow:hidden;
+  transition: transform .12s ease, box-shadow .15s ease;
+  display:flex;
+  flex-direction:column;
+  gap: 10px;
+}
+.optionA{ background: var(--yellow); box-shadow: 0 6px 0 #b89a1f; }
+.optionB{ background: var(--pink); color: var(--cream); box-shadow: 0 6px 0 #a51f52; }
+.option:not(:disabled):hover{ transform: translateY(-3px); }
+.option:not(:disabled):active{ transform: translateY(2px); }
+.option:disabled{ cursor: default; opacity: 0.85; }
+.option-tag{
+  font-family:'Anton', sans-serif;
+  font-size: 22px;
+  width: 34px; height:34px;
+  display:flex; align-items:center; justify-content:center;
+  background: rgba(0,0,0,0.15);
+  border-radius: 8px;
+}
+.optionB .option-tag{ background: rgba(0,0,0,0.25); }
+.option-bar{
+  display:none;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(0,0,0,0.15);
+  overflow:hidden;
+}
+.option-fill{
+  display:block;
+  height:100%;
+  width:0%;
+  background: rgba(0,0,0,0.55);
+  transition: width .6s cubic-bezier(.2,.8,.2,1);
+}
+.option-pct{ display:none; font-family:'Anton', sans-serif; font-size: 22px; }
+.revealed .option-bar, .revealed .option-pct{ display:block; }
+.vs-wrap{ display:flex; align-items:center; justify-content:center; }
+.vs-bolt{
+  font-family:'Anton', sans-serif;
+  font-size: 26px;
+  color: var(--bg);
+  background: var(--cream);
+  width: 54px; height:54px;
+  border-radius: 50%;
+  display:flex; align-items:center; justify-content:center;
+  border: 3px solid var(--violet);
+  transform: rotate(-6deg);
+}
+@media (max-width: 620px){
+  .duel{ grid-template-columns: 1fr; }
+  .vs-wrap{ order:1; margin: -6px 0; }
+  .optionA{ order:0; }
+  .optionB{ order:2; }
+}
+.verdict{ min-height: 22px; font-size: 14px; color: var(--violet-dim); text-align:center; letter-spacing: 0.5px; }
+.verdict.show{ color: var(--green); }
+.controls{ display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
+.next-btn{
+  font-family:'Anton', sans-serif;
+  font-size: 15px;
+  letter-spacing: 1px;
+  color: var(--bg);
+  background: var(--cream);
+  border: none;
+  padding: 14px 26px;
+  border-radius: 999px;
+  cursor:pointer;
+  box-shadow: 0 5px 0 #b0a894;
+  transition: transform .12s ease;
+}
+.next-btn:hover{ transform: translateY(-2px); }
+.next-btn:active{ transform: translateY(3px); box-shadow: 0 2px 0 #b0a894; }
+.reveal-btn{
+  font-family:'Anton', sans-serif;
+  font-size: 15px;
+  letter-spacing: 1px;
+  color: var(--cream);
+  background: var(--violet);
+  border: none;
+  padding: 14px 22px;
+  border-radius: 999px;
+  cursor:pointer;
+  box-shadow: 0 5px 0 #4a3966;
+  transition: transform .12s ease;
+}
+.reveal-btn:hover{ transform: translateY(-2px); }
+.reveal-btn:active{ transform: translateY(3px); box-shadow: 0 2px 0 #4a3966; }
+.status{ font-size: 12px; color: var(--violet-dim); min-height: 16px; }
+.footfoot{ text-align:center; font-size: 11px; letter-spacing: 1px; color: var(--violet-dim); padding: 14px; z-index:1; }
+.credit-line{
+  text-align:center;
+  font-family:'Anton', sans-serif;
+  font-size: clamp(18px, 4vw, 26px);
+  letter-spacing: 1px;
+  color: var(--yellow);
+  padding: 10px 14px 4px;
+  z-index:1;
+  text-shadow: 0 0 14px rgba(245,208,51,0.5);
+}
+.pack-badge{
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--violet-dim);
+  text-align:center;
+}
+.character-overlay{
+  display:none;
+  position: fixed; inset:0;
+  background: rgba(10,7,15,0.85);
+  align-items:center; justify-content:center;
+  z-index: 50;
+  padding: 20px;
+}
+.character-overlay.show{ display:flex; }
+.character-card{
+  background: var(--bg2);
+  border: 2px solid var(--violet);
+  border-radius: 24px;
+  padding: 34px 26px;
+  max-width: 420px;
+  width:100%;
+  text-align:center;
+  box-shadow: 0 0 40px rgba(123,94,167,0.4);
+}
+.character-emoji{ font-size: 56px; margin-bottom: 10px; }
+.character-title{
+  font-family:'Anton', sans-serif;
+  font-size: 26px;
+  color: var(--yellow);
+  margin-bottom: 14px;
+  letter-spacing: 1px;
+}
+.character-desc{ font-size: 15px; line-height: 1.6; color: var(--cream); margin-bottom: 14px; }
+.character-stats{ font-size: 12px; color: var(--violet-dim); margin-bottom: 20px; letter-spacing: 0.5px; }
+.char-btn-row{ display:flex; gap: 10px; flex-wrap: wrap; justify-content:center; }
+.end-btn{
+  font-family:'Anton', sans-serif;
+  font-size: 15px;
+  letter-spacing: 1px;
+  color: var(--cream);
+  background: var(--pink);
+  border: none;
+  padding: 14px 22px;
+  border-radius: 999px;
+  cursor:pointer;
+  box-shadow: 0 5px 0 #a51f52;
+  transition: transform .12s ease;
+}
+.end-btn:hover{ transform: translateY(-2px); }
+.end-btn:active{ transform: translateY(3px); box-shadow: 0 2px 0 #a51f52; }
+@keyframes shake{
+  0%,100%{ transform: translateX(0); }
+  20%{ transform: translateX(-4px) rotate(-1deg); }
+  40%{ transform: translateX(4px) rotate(1deg); }
+  60%{ transform: translateX(-3px); }
+  80%{ transform: translateX(3px); }
+}
+.shake{ animation: shake .35s ease; }
+</style>
+</head>
+<body>
+
+<div class="noise"></div>
+
+<header class="topbar">
+  <div class="logo">WOULD<span class="logo-you">YOU</span>RATHER<span class="bolt">⚡</span></div>
+  <div class="streak">STREAK <span id="streakCount">0</span></div>
+</header>
+
+<main class="arena">
+  <div class="category-picker" id="categoryPicker">
+    <button class="chip active" data-cat="chaotic">😈 Chaotic</button>
+    <button class="chip" data-cat="wholesome">🥹 Wholesome</button>
+    <button class="chip" data-cat="cursed">👁️ Cursed</button>
+    <button class="chip" data-cat="highschool">🎒 School</button>
+    <button class="chip" data-cat="apocalypse">☄️ Apocalypse</button>
+  </div>
+
+  <div class="duel" id="duel">
+    <button class="option optionA" id="optionA">
+      <span class="option-tag">A</span>
+      <span class="option-text" id="optionAText">Loading…</span>
+      <span class="option-bar"><span class="option-fill" id="fillA"></span></span>
+      <span class="option-pct" id="pctA"></span>
+    </button>
+    <div class="vs-wrap"><div class="vs-bolt">VS</div></div>
+    <button class="option optionB" id="optionB">
+      <span class="option-tag">B</span>
+      <span class="option-text" id="optionBText">Loading…</span>
+      <span class="option-bar"><span class="option-fill" id="fillB"></span></span>
+      <span class="option-pct" id="pctB"></span>
+    </button>
+  </div>
+
+  <div class="verdict" id="verdict"></div>
+  <div class="controls">
+    <button class="next-btn" id="nextBtn">🎲 NEW DILEMMA</button>
+    <button class="reveal-btn" id="revealBtn">🔮 REVEAL MY CHARACTER</button>
+  </div>
+  <p class="status" id="status"></p>
+  <p class="pack-badge">📋 100+ hand-picked dilemmas across 5 packs</p>
+
+  <div class="character-overlay" id="characterOverlay">
+    <div class="character-card">
+      <div class="character-emoji" id="charEmoji">🎭</div>
+      <div class="character-title" id="charTitle">Your Character</div>
+      <p class="character-desc" id="charDesc"></p>
+      <p class="character-stats" id="charStats"></p>
+      <div class="char-btn-row">
+        <button class="next-btn" id="closeCharBtn">KEEP PLAYING</button>
+        <button class="end-btn" id="endGameBtn">🏁 END THE GAME</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="character-overlay" id="endOverlay">
+    <div class="character-card">
+      <div class="character-emoji">🏁</div>
+      <div class="character-title">Game Over!</div>
+      <p class="character-desc" id="endSummary"></p>
+      <p class="character-stats" id="endStats"></p>
+      <button class="next-btn" id="playAgainBtn">🔄 PLAY AGAIN</button>
+    </div>
+  </div>
+</main>
+
+<footer class="footfoot">built with claude · vibe-coded for github</footer>
+<div class="credit-line">CREATED BY :- VIRAT CHOPRA</div>
+
+<script>
+const QUESTIONS = {
+  chaotic: [
+    { a: "Only be able to whisper for the rest of your life", b: "Only be able to shout for the rest of your life", split: 38 },
+    { a: "Have spaghetti for hair", b: "Have marshmallow fingers", split: 55 },
+    { a: "Sneeze every time someone says your name", b: "Hiccup every time you hear music", split: 47 },
+    { a: "Always walk backwards in public", b: "Always talk in rhymes", split: 60 },
+    { a: "Have a pet that only speaks in riddles", b: "Have a pet that narrates your life out loud", split: 44 },
+    { a: "Randomly teleport 10 feet once a day", b: "Randomly freeze for 10 seconds once a day", split: 52 },
+    { a: "Wear roller skates everywhere for a month", b: "Wear flippers everywhere for a month", split: 33 },
+    { a: "Your phone autocorrects to only emojis", b: "Your phone autocorrects to only ALL CAPS", split: 41 }
+  ],
+  wholesome: [
+    { a: "Get a surprise puppy every birthday", b: "Get a surprise trip every birthday", split: 61 },
+    { a: "Always know when a friend needs a hug", b: "Always know when a friend needs a laugh", split: 47 },
+    { a: "Have a garden that grows your favorite snacks", b: "Have a room that plays your favorite memories", split: 58 },
+    { a: "Wake up to your favorite breakfast every day", b: "Wake up to your favorite song every day", split: 44 },
+    { a: "Get one perfect compliment every morning", b: "Get one small surprise gift every week", split: 53 },
+    { a: "Never forget a friend's birthday again", b: "Always find the perfect gift for anyone", split: 49 },
+    { a: "Have unlimited hot chocolate on rainy days", b: "Have unlimited blankets that are always warm", split: 56 }
+  ],
+  cursed: [
+    { a: "Have eyes that never blink", b: "Have a mouth that never fully closes", split: 33 },
+    { a: "Sneeze confetti forever", b: "Hiccup bubbles forever", split: 66 },
+    { a: "Your shadow moves half a second late", b: "Your reflection blinks when you don't", split: 29 },
+    { a: "Every mirror shows you 5 minutes in the past", b: "Every clock near you runs 5 minutes fast", split: 45 },
+    { a: "Your footsteps echo twice, always", b: "Your voice has a second, quieter voice behind it", split: 37 },
+    { a: "You can taste colors", b: "You can hear smells", split: 51 }
+  ],
+  highschool: [
+    { a: "Forget your homework at home every day", b: "Forget your friend's name every day", split: 44 },
+    { a: "Have exams announced 1 day early always", b: "Have exams announced 1 hour early always", split: 72 },
+    { a: "Sit in the front row forever", b: "Sit in the last bench forever", split: 40 },
+    { a: "Have every teacher know your name", b: "Have no teacher ever notice you", split: 35 },
+    { a: "Get unlimited extra time on tests", b: "Get to skip one subject's homework forever", split: 63 },
+    { a: "Always get picked first for group projects", b: "Always get to pick your own group", split: 68 },
+    { a: "Have perfect handwriting forever", b: "Have perfect memory for facts forever", split: 46 }
+  ],
+  apocalypse: [
+    { a: "Survive with unlimited snacks but no wifi", b: "Survive with unlimited wifi but no snacks", split: 58 },
+    { a: "Be the fastest runner in the group", b: "Be the smartest planner in the group", split: 41 },
+    { a: "Have a flashlight that never dies", b: "Have a knife that never dulls", split: 53 },
+    { a: "Know how to find water anywhere", b: "Know how to build shelter anywhere", split: 48 },
+    { a: "Travel alone but move faster", b: "Travel in a group but move slower", split: 39 },
+    { a: "Have one walkie-talkie that always works", b: "Have one map that's always accurate", split: 55 }
+  ]
+};
+
+const optionA = document.getElementById('optionA');
+const optionB = document.getElementById('optionB');
+const optionAText = document.getElementById('optionAText');
+const optionBText = document.getElementById('optionBText');
+const fillA = document.getElementById('fillA');
+const fillB = document.getElementById('fillB');
+const pctA = document.getElementById('pctA');
+const pctB = document.getElementById('pctB');
+const duel = document.getElementById('duel');
+const verdict = document.getElementById('verdict');
+const nextBtn = document.getElementById('nextBtn');
+const statusEl = document.getElementById('status');
+const streakCount = document.getElementById('streakCount');
+const chips = document.querySelectorAll('.chip');
+
+const revealBtn = document.getElementById('revealBtn');
+const characterOverlay = document.getElementById('characterOverlay');
+const charEmoji = document.getElementById('charEmoji');
+const charTitle = document.getElementById('charTitle');
+const charDesc = document.getElementById('charDesc');
+const charStats = document.getElementById('charStats');
+const closeCharBtn = document.getElementById('closeCharBtn');
+const endGameBtn = document.getElementById('endGameBtn');
+const endOverlay = document.getElementById('endOverlay');
+const endSummary = document.getElementById('endSummary');
+const endStats = document.getElementById('endStats');
+const playAgainBtn = document.getElementById('playAgainBtn');
+
+let currentCategory = 'chaotic';
+let streak = 0;
+let choiceMade = false;
+let currentSplit = 50;
+let history = [];
+let lastCharacter = null;
+let recentlyShown = []; // avoids repeating the same question back-to-back
+
+chips.forEach(chip => {
+  chip.addEventListener('click', () => {
+    chips.forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    currentCategory = chip.dataset.cat;
+    loadDilemma();
+  });
+});
+
+nextBtn.addEventListener('click', loadDilemma);
+optionA.addEventListener('click', () => pick('A'));
+optionB.addEventListener('click', () => pick('B'));
+revealBtn.addEventListener('click', revealCharacter);
+closeCharBtn.addEventListener('click', () => characterOverlay.classList.remove('show'));
+endGameBtn.addEventListener('click', endGame);
+playAgainBtn.addEventListener('click', () => {
+  history = [];
+  streak = 0;
+  streakCount.textContent = streak;
+  endOverlay.classList.remove('show');
+  optionA.disabled = false;
+  optionB.disabled = false;
+  nextBtn.disabled = false;
+  revealBtn.disabled = false;
+  loadDilemma();
+});
+
+function loadDilemma(){
+  choiceMade = false;
+  duel.classList.remove('revealed');
+  verdict.textContent = '';
+  verdict.classList.remove('show');
+  fillA.style.width = '0%';
+  fillB.style.width = '0%';
+  pctA.textContent = '';
+  pctB.textContent = '';
+  statusEl.textContent = '';
+
+  const list = QUESTIONS[currentCategory];
+  let pool = list.filter((_, i) => !recentlyShown.includes(currentCategory + i));
+  if(pool.length === 0){ pool = list; recentlyShown = []; }
+
+  const index = Math.floor(Math.random() * pool.length);
+  const q = pool[index];
+  const realIndex = list.indexOf(q);
+  recentlyShown.push(currentCategory + realIndex);
+  if(recentlyShown.length > 4) recentlyShown.shift();
+
+  optionAText.textContent = q.a;
+  optionBText.textContent = q.b;
+  currentSplit = q.split;
+}
+
+function pick(which){
+  if(choiceMade) return;
+  choiceMade = true;
+  const splitA = currentSplit;
+  const splitB = 100 - splitA;
+  fillA.style.width = splitA + '%';
+  fillB.style.width = splitB + '%';
+  pctA.textContent = splitA + '%';
+  pctB.textContent = splitB + '%';
+  duel.classList.add('revealed');
+
+  const picked = which === 'A' ? splitA : splitB;
+  const chosenEl = which === 'A' ? optionA : optionB;
+  chosenEl.classList.add('shake');
+  setTimeout(() => chosenEl.classList.remove('shake'), 350);
+
+  verdict.textContent = picked >= 50
+    ? `You rolled with the majority (${picked}%). Basic but valid.`
+    : `Bold pick — only ${picked}% agree with you. Respect.`;
+  verdict.classList.add('show');
+  streak++;
+  streakCount.textContent = streak;
+
+  history.push({ category: currentCategory, bold: picked < 50 });
+}
+
+const CHARACTER_TYPES = {
+  chaotic: { emoji: '😈', title: 'Agent of Chaos', desc: "You don't avoid mess, you invite it. You'd rather have a wild story than a safe one." },
+  wholesome: { emoji: '🥹', title: 'Golden Retriever Energy', desc: "You pick warmth over weirdness every time. Comfort, kindness, and good vibes lead the way." },
+  cursed: { emoji: '👁️', title: 'Beautifully Unhinged', desc: "Normal is boring to you. You lean into the weird and slightly cursed without blinking." },
+  highschool: { emoji: '🎒', title: 'Certified Overthinker', desc: "Relatable struggles hit different for you. You've been there, survived that, and joked about it after." },
+  apocalypse: { emoji: '☄️', title: 'Built for Survival', desc: "When things go wrong, you're the one with a plan. Calm under pressure, always thinking two steps ahead." }
+};
+
+function revealCharacter(){
+  if(history.length < 2){
+    statusEl.textContent = 'Play at least 2 rounds first, then reveal your character!';
+    return;
+  }
+
+  const counts = {};
+  let boldCount = 0;
+  history.forEach(h => {
+    counts[h.category] = (counts[h.category] || 0) + 1;
+    if(h.bold) boldCount++;
+  });
+  const topCategory = Object.keys(counts).sort((a,b) => counts[b]-counts[a])[0];
+  const boldPct = Math.round((boldCount / history.length) * 100);
+
+  const base = CHARACTER_TYPES[topCategory];
+  charEmoji.textContent = base.emoji;
+  charTitle.textContent = base.title;
+  const fullDesc = base.desc + (boldPct >= 50
+    ? " And honestly? You don't care what the crowd thinks."
+    : " You like knowing most people would agree with you.");
+  charDesc.textContent = fullDesc;
+  const statsLine = `Based on ${history.length} choices · ${boldPct}% bold picks · mostly ${topCategory}`;
+  charStats.textContent = statsLine;
+
+  lastCharacter = { emoji: base.emoji, title: base.title, desc: fullDesc, stats: statsLine };
+  characterOverlay.classList.add('show');
+}
+
+function endGame(){
+  characterOverlay.classList.remove('show');
+  if(!lastCharacter){ revealCharacter(); }
+
+  endSummary.textContent = `${lastCharacter.emoji} ${lastCharacter.title} — ${lastCharacter.desc}`;
+  endStats.textContent = `Final streak: ${streak} · ${lastCharacter.stats}`;
+  endOverlay.classList.add('show');
+
+  optionA.disabled = true;
+  optionB.disabled = true;
+  nextBtn.disabled = true;
+  revealBtn.disabled = true;
+}
+
+loadDilemma();
+</script>
+</body>
+</html>
